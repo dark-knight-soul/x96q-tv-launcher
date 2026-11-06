@@ -82,8 +82,28 @@ adb shell cmd package compile -m speed -f com.google.android.youtube.tv
 YouTube, Kinopoisk and Rutube cold start became ~2× faster (2.4 → 1.2 s, 6.2 → 3.1 s, 5.5 → 2.7 s).
 App updates reset this — repeat after updates (`tools/dexstat.sh` lists the current state).
 
-Side effect of `low_ram`: notification listeners are not started at all, so apps cannot read media sessions —
-the launcher's "Now playing" card stays hidden on this box.
+Side effect of `low_ram`: notification listeners are **not started at all** (`dumpsys notification` shows
+`Live notification listeners (0)`), so a normal app cannot read media sessions and the launcher's "Now playing" card
+stays hidden. Fix: make the launcher a privileged system app — it then gets `MEDIA_CONTENT_CONTROL` and reads media
+sessions directly. The installed APK stays an "update" of the system copy, so `adb install -r` keeps working:
+
+```bash
+adb install -r app-release.apk                       # normal install first
+adb push app-release.apk /data/local/tmp/Vitrina.apk
+adb push tools/privapp-permissions-vitrina.xml /data/local/tmp/
+adb push tools/make-privapp.sh /data/local/tmp/
+adb shell su 0 sh /data/local/tmp/make-privapp.sh    # copies to /system/priv-app/Vitrina + permission whitelist
+adb reboot
+adb shell dumpsys package io.github.darkknightsoul.vitrina | grep MEDIA_CONTENT_CONTROL   # granted=true
+```
+
+## The stock launcher wins at boot
+
+`com.droidlogic.xlauncher` is `DIRECT_BOOT_AWARE`. At boot the user storage is still locked, so Android starts the only
+home screen available at that moment — the stock one — and does not switch after unlock, even if another launcher is
+set with `set-home-activity`. Disable it (`pm disable-user --user 0 com.droidlogic.xlauncher`): then the system
+`FallbackHome` waits for unlock and opens your launcher. **Wait ~15 s before rebooting** — package state is written to
+`/data/system/users/0/package-restrictions.xml` with a delay, and `adb reboot` right away loses it.
 
 ## Other quirks
 

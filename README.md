@@ -68,7 +68,16 @@ adb shell cmd package compile -m speed -f io.github.darkknightsoul.vitrina
 adb shell cmd package set-home-activity io.github.darkknightsoul.vitrina/.MainActivity
 ```
 
-**Revert to the stock launcher:** `adb shell cmd package set-home-activity com.droidlogic.xlauncher/.Launcher`
+On X96Q also disable the stock launcher, otherwise it opens at every boot (it starts before the storage is unlocked):
+
+```bash
+adb shell pm disable-user --user 0 com.droidlogic.xlauncher
+```
+
+**"Now playing" card on X96Q** needs the launcher installed as a privileged system app (the firmware's `low_ram` mode
+disables notification listeners) — see [docs/x96q-firmware.md](docs/x96q-firmware.md#speeding-up-apps).
+
+**Revert to the stock launcher:** `adb shell pm enable com.droidlogic.xlauncher && adb shell cmd package set-home-activity com.droidlogic.xlauncher/.Launcher`
 
 ## X96Q firmware: adware and quirks
 

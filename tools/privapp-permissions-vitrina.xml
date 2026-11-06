@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Разрешения «Витрины» как системного приложения (/system/priv-app/Vitrina):
+     MEDIA_CONTENT_CONTROL — список играющих плееров для карточки «Сейчас играет»
+     без службы уведомлений (на low_ram-прошивке она не запускается). -->
+<permissions>
+    <privapp-permissions package="io.github.darkknightsoul.vitrina">
+        <permission name="android.permission.MEDIA_CONTENT_CONTROL"/>
+    </privapp-permissions>
+</permissions>

@@ -21,7 +21,9 @@ import android.widget.TextView
  * играющих плееров (MediaSession) только приложениям с включённой такой службой.
  * Включается один раз через adb:
  * cmd notification allow_listener io.github.darkknightsoul.vitrina/io.github.darkknightsoul.vitrina.MediaListener
- * (а не settings put — та затирает других слушателей уведомлений)
+ * (а не settings put — та затирает других слушателей уведомлений).
+ * На прошивках «мало памяти» (low_ram) это не работает — там лаунчер ставится системным приложением
+ * с правом MEDIA_CONTENT_CONTROL, и служба не нужна (см. поле listener).
  */
 class MediaListener : NotificationListenerService() {
     /**
@@ -41,7 +43,15 @@ class MediaListener : NotificationListenerService() {
 class NowPlayingView(context: Context) : LinearLayout(context) {
 
     private val sessions = context.getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager
-    private val listener = ComponentName(context, MediaListener::class.java)
+    /**
+     * Чьим именем спрашиваем список плееров. Системному приложению с правом MEDIA_CONTENT_CONTROL
+     * служба уведомлений не нужна (null). Это важно на прошивках с ro.config.low_ram=true:
+     * там Android вообще не запускает слушателей уведомлений, и обычный способ не работает.
+     */
+    private val listener: ComponentName? =
+        if (context.checkSelfPermission(android.Manifest.permission.MEDIA_CONTENT_CONTROL) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED) null
+        else ComponentName(context, MediaListener::class.java)
     private var controller: MediaController? = null
 
     private val art = ImageView(context).apply { scaleType = ImageView.ScaleType.FIT_XY }
