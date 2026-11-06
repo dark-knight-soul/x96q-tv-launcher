@@ -1,0 +1,19 @@
+# Резервные копии с приставки: APK рекламного ПО, системные файлы, настройки — не публикуем
+backup/
+
+# Разбор прошивки: бинарники вредоносных демонов, настройки рекламных SDK, данные аккаунта владельца
+research/
+
+# Сборка
+launcher/.gradle/
+launcher/build/
+launcher/app/build/
+launcher/local.properties
+*.apk
+*.aab
+
+# IDE и система
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
