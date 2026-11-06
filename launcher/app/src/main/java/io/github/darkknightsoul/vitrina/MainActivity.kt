@@ -403,10 +403,8 @@ class MainActivity : Activity() {
         val focusPkg = if (keepFocus) (currentFocus as? TvTile)?.tag as? String else null
         io.safe {
             val list = loadApps(this, prefs, tileW, tileH, radius)
-            main.post {
-                apps = list
-                buildGrid(list, focusPkg)
-            }
+            // apps обновит сам buildGrid — ему нужен старый список, чтобы знать, где стояла плитка в фокусе
+            main.post { buildGrid(list, focusPkg) }
         }
     }
 
@@ -421,11 +419,13 @@ class MainActivity : Activity() {
      * [quiet] — выделить без наклона и блика (шаги режима «Переместить»).
      */
     private fun buildGrid(list: List<AppEntry>, focusPkg: String?, quiet: Boolean = false) {
-        apps = list
         // При первом построении фокус стоит там, куда его поставила система (угловая кнопка), — это не выбор пользователя
         val firstBuild = grid.childCount == 0
         val hadFocus = currentFocus
         val keepPkg = focusPkg ?: (hadFocus as? TvTile)?.tag as? String
+        // Где стояла плитка в фокусе — если её приложение удалили, фокус останется на том же месте сетки
+        val oldIndex = apps.indexOfFirst { it.pkg == keepPkg }
+        apps = list
         // Пока ячейки вынуты, фокусу некуда деться — без этого он «прыгает» на угловую кнопку
         // и дёргает прокрутку витрины туда-обратно
         column.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
@@ -465,11 +465,16 @@ class MainActivity : Activity() {
         column.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
         when {
             toFocus != null -> if (quiet) toFocus!!.focusQuietly() else toFocus!!.requestFocus()
+            // Приложение в фокусе удалили — соседняя плитка встаёт на его место и получает фокус
+            hadFocus is TvTile && oldIndex >= 0 && list.isNotEmpty() -> tileAt(minOf(oldIndex, list.size - 1))?.requestFocus()
             // Фокус был не на плитке (угловая кнопка) — возвращаем туда же
             !firstBuild && hadFocus != null && hadFocus !is TvTile -> hadFocus.requestFocus()
             else -> firstTile()?.requestFocus()
         }
     }
+
+    private fun tileAt(index: Int): View? =
+        ((grid.getChildAt(index / columns) as? ViewGroup)?.getChildAt(index % columns) as? TileCell)?.tile
 
     private fun firstTile(): View? = ((grid.getChildAt(0) as? ViewGroup)?.getChildAt(0) as? TileCell)?.tile
 
